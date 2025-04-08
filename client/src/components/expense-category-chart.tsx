@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useCurrency } from "@/hooks/use-currency";
 
 type CategoryData = {
   category: string;
@@ -31,6 +32,7 @@ const COLORS = [
 
 export function ExpenseCategoryChart({ data, isLoading }: ExpenseCategoryChartProps) {
   const [timeframe, setTimeframe] = useState("this-month");
+  const { formatAmount, currency } = useCurrency();
   
   // Format data for the chart
   const chartData = data.map((item) => ({
@@ -111,7 +113,7 @@ export function ExpenseCategoryChart({ data, isLoading }: ExpenseCategoryChartPr
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Amount']}
+                formatter={(value: number) => [formatAmount(value), 'Amount']}
                 labelFormatter={(name) => `${name}`}
               />
             </PieChart>

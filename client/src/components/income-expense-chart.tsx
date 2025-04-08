@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { useCurrency } from "@/hooks/use-currency";
 
 type ChartData = {
   name: string;
@@ -28,6 +29,7 @@ const generateData = (): ChartData[] => {
 export function IncomeExpenseChart() {
   const [timeframe, setTimeframe] = useState("last-6-months");
   const [data] = useState<ChartData[]>(generateData());
+  const { formatAmount, currency } = useCurrency();
 
   return (
     <Card className="lg:col-span-2">
@@ -63,10 +65,10 @@ export function IncomeExpenseChart() {
                 tickLine={false} 
                 tick={{ fontSize: 12 }} 
                 width={40}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `${currency.symbol}${value}`}
               />
               <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]}
+                formatter={(value: number) => [formatAmount(value), undefined]}
                 contentStyle={{ borderRadius: '6px', border: '1px solid #e2e8f0' }}
               />
               <Bar 

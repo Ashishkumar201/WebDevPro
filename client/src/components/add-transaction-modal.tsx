@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useCurrency } from "@/hooks/use-currency";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +27,7 @@ export function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProp
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
   const { toast } = useToast();
   const { user } = useAuth();
+  const { currency } = useCurrency();
 
   // Prepare form with zod validation
   const form = useForm<z.infer<typeof transactionSchema>>({
@@ -156,7 +158,7 @@ export function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProp
                   <FormControl>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-slate-500">$</span>
+                        <span className="text-slate-500">{currency.symbol}</span>
                       </div>
                       <Input 
                         type="number" 

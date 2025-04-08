@@ -6,6 +6,7 @@ import { ExpenseCategoryChart } from "@/components/expense-category-chart";
 import { IncomeExpenseChart } from "@/components/income-expense-chart";
 import { RecentTransactions } from "@/components/recent-transactions";
 import { AddTransactionModal } from "@/components/add-transaction-modal";
+import { CurrencySelector } from "@/components/currency-selector";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,7 +42,8 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
               <p className="text-slate-500 text-sm">Overview of your finances</p>
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-2">
+            <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
+              <CurrencySelector />
               <Select value={timeframe} onValueChange={setTimeframe}>
                 <SelectTrigger className="w-[140px]">
                   <Calendar className="h-4 w-4 mr-2" />

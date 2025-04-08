@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { useCurrency } from "@/hooks/use-currency";
 
 type Transaction = {
   id: string;
@@ -21,15 +22,7 @@ type RecentTransactionsProps = {
 };
 
 export function RecentTransactions({ transactions, isLoading }: RecentTransactionsProps) {
-  // Format currency
-  const formatCurrency = (amount: number, isExpense = false) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(isExpense ? -amount : amount);
-  };
+  const { formatAmount } = useCurrency();
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -138,7 +131,7 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
                   <td className={`py-3 px-4 text-right text-sm font-medium ${
                     transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    {transaction.type === 'income' ? '+' : '-'}{formatAmount(transaction.amount, false)}
                   </td>
                 </tr>
               ))}

@@ -1,5 +1,6 @@
 import { ArrowUpRight, ArrowDownRight, DollarSign, ArrowDown, ArrowUp, PiggyBank } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useCurrency } from "@/hooks/use-currency";
 
 type SummaryCardsProps = {
   netWorth: number;
@@ -10,14 +11,7 @@ type SummaryCardsProps = {
 };
 
 export function SummaryCards({ netWorth, monthlyIncome, monthlyExpenses, savingsRate, isLoading }: SummaryCardsProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
+  const { formatAmount, currency } = useCurrency();
 
   // Sample cards with loading state
   return (
@@ -30,11 +24,11 @@ export function SummaryCards({ netWorth, monthlyIncome, monthlyExpenses, savings
             {isLoading ? (
               <div className="h-8 w-32 bg-slate-200 animate-pulse rounded mt-1"></div>
             ) : (
-              <p className="text-2xl font-bold text-slate-800">{formatCurrency(netWorth)}</p>
+              <p className="text-2xl font-bold text-slate-800">{formatAmount(netWorth)}</p>
             )}
           </div>
           <span className="p-2 bg-blue-100 text-blue-800 rounded-full">
-            <DollarSign className="h-4 w-4" />
+            <span className="h-4 w-4 flex items-center justify-center font-semibold">{currency.symbol}</span>
           </span>
         </div>
         <div className="mt-auto flex items-center text-sm">
@@ -53,7 +47,7 @@ export function SummaryCards({ netWorth, monthlyIncome, monthlyExpenses, savings
             {isLoading ? (
               <div className="h-8 w-32 bg-slate-200 animate-pulse rounded mt-1"></div>
             ) : (
-              <p className="text-2xl font-bold text-slate-800">{formatCurrency(monthlyIncome)}</p>
+              <p className="text-2xl font-bold text-slate-800">{formatAmount(monthlyIncome)}</p>
             )}
           </div>
           <span className="p-2 bg-green-100 text-green-800 rounded-full">
@@ -76,7 +70,7 @@ export function SummaryCards({ netWorth, monthlyIncome, monthlyExpenses, savings
             {isLoading ? (
               <div className="h-8 w-32 bg-slate-200 animate-pulse rounded mt-1"></div>
             ) : (
-              <p className="text-2xl font-bold text-slate-800">{formatCurrency(monthlyExpenses)}</p>
+              <p className="text-2xl font-bold text-slate-800">{formatAmount(monthlyExpenses)}</p>
             )}
           </div>
           <span className="p-2 bg-red-100 text-red-800 rounded-full">
