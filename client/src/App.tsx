@@ -13,6 +13,12 @@ function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/transactions" component={() => <h1 className="p-8 text-2xl font-bold">Transactions Page</h1>} />
+      <ProtectedRoute path="/budget" component={() => <h1 className="p-8 text-2xl font-bold">Budget Page</h1>} />
+      <ProtectedRoute path="/assets" component={() => <h1 className="p-8 text-2xl font-bold">Assets Page</h1>} />
+      <ProtectedRoute path="/debts" component={() => <h1 className="p-8 text-2xl font-bold">Debts Page</h1>} />
+      <ProtectedRoute path="/reports" component={() => <h1 className="p-8 text-2xl font-bold">Reports Page</h1>} />
+      <ProtectedRoute path="/settings" component={() => <h1 className="p-8 text-2xl font-bold">Settings Page</h1>} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
