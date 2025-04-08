@@ -2,6 +2,18 @@ import { users, incomes, expenses, assets, debts } from "@shared/schema";
 import type { User, InsertUser, Income, InsertIncome, Expense, InsertExpense, Asset, InsertAsset, Debt, InsertDebt } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, and, sql } from "drizzle-orm";
+// Use require for pg as it doesn't work well with ESM
+import pg from 'pg';
+const { Pool } = pg;
+
+// Create PostgreSQL session store
+const PostgresSessionStore = connectPg(session);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 const MemoryStore = createMemoryStore(session);
 
@@ -32,152 +44,151 @@ export interface IStorage {
   createDebt(debt: InsertDebt): Promise<Debt>;
 
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private incomes: Map<number, Income>;
-  private expenses: Map<number, Expense>;
-  private assets: Map<number, Asset>;
-  private debts: Map<number, Debt>;
-  
-  sessionStore: session.SessionStore;
-  
-  private userId: number;
-  private incomeId: number;
-  private expenseId: number;
-  private assetId: number;
-  private debtId: number;
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
 
   constructor() {
-    this.users = new Map();
-    this.incomes = new Map();
-    this.expenses = new Map();
-    this.assets = new Map();
-    this.debts = new Map();
-    
-    this.userId = 1;
-    this.incomeId = 1;
-    this.expenseId = 1;
-    this.assetId = 1;
-    this.debtId = 1;
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000, // 1 day
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   // Income methods
   async getIncomes(userId: number): Promise<Income[]> {
-    return Array.from(this.incomes.values()).filter(
-      (income) => income.userId === userId,
-    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return await db
+      .select()
+      .from(incomes)
+      .where(eq(incomes.userId, userId))
+      .orderBy(sql`${incomes.date} DESC`);
   }
 
   async getIncomesByMonth(userId: number, year: number, month: number): Promise<Income[]> {
-    return Array.from(this.incomes.values()).filter(
-      (income) => {
-        const incomeDate = new Date(income.date);
-        return income.userId === userId && 
-               incomeDate.getFullYear() === year && 
-               incomeDate.getMonth() === month;
-      }
-    );
+    // In SQL, months are 1-based, but JavaScript months are 0-based
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    
+    // Adjust month to be 1-based for SQL
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(nextYear, nextMonth, 1);
+    
+    return await db
+      .select()
+      .from(incomes)
+      .where(and(
+        eq(incomes.userId, userId),
+        sql`${incomes.date} >= ${startDate.toISOString()}`,
+        sql`${incomes.date} < ${endDate.toISOString()}`
+      ));
   }
 
   async createIncome(insertIncome: InsertIncome): Promise<Income> {
-    const id = this.incomeId++;
-    const income: Income = { ...insertIncome, id };
-    this.incomes.set(id, income);
+    const [income] = await db.insert(incomes).values(insertIncome).returning();
     return income;
   }
 
   // Expense methods
   async getExpenses(userId: number): Promise<Expense[]> {
-    return Array.from(this.expenses.values()).filter(
-      (expense) => expense.userId === userId,
-    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return await db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.userId, userId))
+      .orderBy(sql`${expenses.date} DESC`);
   }
 
   async getExpensesByMonth(userId: number, year: number, month: number): Promise<Expense[]> {
-    return Array.from(this.expenses.values()).filter(
-      (expense) => {
-        const expenseDate = new Date(expense.date);
-        return expense.userId === userId && 
-               expenseDate.getFullYear() === year && 
-               expenseDate.getMonth() === month;
-      }
-    );
+    // In SQL, months are 1-based, but JavaScript months are 0-based
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    
+    // Adjust month to be 1-based for SQL
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(nextYear, nextMonth, 1);
+    
+    return await db
+      .select()
+      .from(expenses)
+      .where(and(
+        eq(expenses.userId, userId),
+        sql`${expenses.date} >= ${startDate.toISOString()}`,
+        sql`${expenses.date} < ${endDate.toISOString()}`
+      ));
   }
 
   async getExpensesByCategory(userId: number, year: number, month: number): Promise<{ category: string, total: number }[]> {
-    const expenses = await this.getExpensesByMonth(userId, year, month);
-    const categoryMap = new Map<string, number>();
-
-    for (const expense of expenses) {
-      const currentTotal = categoryMap.get(expense.category) || 0;
-      categoryMap.set(expense.category, currentTotal + Number(expense.amount));
-    }
-
-    return Array.from(categoryMap.entries()).map(([category, total]) => ({
-      category,
-      total,
-    }));
+    // In SQL, months are 1-based, but JavaScript months are 0-based
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    
+    // Adjust month to be 1-based for SQL
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(nextYear, nextMonth, 1);
+    
+    // This query groups expenses by category and calculates the sum for each category
+    const result = await db.select({
+      category: expenses.category,
+      total: sql<number>`sum(${expenses.amount}::numeric)`,
+    })
+    .from(expenses)
+    .where(and(
+      eq(expenses.userId, userId),
+      sql`${expenses.date} >= ${startDate.toISOString()}`,
+      sql`${expenses.date} < ${endDate.toISOString()}`
+    ))
+    .groupBy(expenses.category);
+    
+    return result;
   }
 
   async createExpense(insertExpense: InsertExpense): Promise<Expense> {
-    const id = this.expenseId++;
-    const expense: Expense = { ...insertExpense, id };
-    this.expenses.set(id, expense);
+    const [expense] = await db.insert(expenses).values(insertExpense).returning();
     return expense;
   }
 
   // Asset methods
   async getAssets(userId: number): Promise<Asset[]> {
-    return Array.from(this.assets.values()).filter(
-      (asset) => asset.userId === userId,
-    );
+    return await db
+      .select()
+      .from(assets)
+      .where(eq(assets.userId, userId));
   }
 
   async createAsset(insertAsset: InsertAsset): Promise<Asset> {
-    const id = this.assetId++;
-    const asset: Asset = { ...insertAsset, id };
-    this.assets.set(id, asset);
+    const [asset] = await db.insert(assets).values(insertAsset).returning();
     return asset;
   }
 
   // Debt methods
   async getDebts(userId: number): Promise<Debt[]> {
-    return Array.from(this.debts.values()).filter(
-      (debt) => debt.userId === userId,
-    );
+    return await db
+      .select()
+      .from(debts)
+      .where(eq(debts.userId, userId));
   }
 
   async createDebt(insertDebt: InsertDebt): Promise<Debt> {
-    const id = this.debtId++;
-    const debt: Debt = { ...insertDebt, id };
-    this.debts.set(id, debt);
+    const [debt] = await db.insert(debts).values(insertDebt).returning();
     return debt;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
