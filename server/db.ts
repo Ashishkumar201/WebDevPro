@@ -6,7 +6,8 @@ import * as schema from "@shared/schema";
 const connectionString = process.env.DATABASE_URL!;
 // Configure postgres client with proper ssl settings for managed DB services
 const client = postgres(connectionString, {
-  ssl: connectionString.includes("localhost") ? false : "require",
+  // ssl: connectionString.includes("localhost") ? false : "require",
+  ssl:"require",
   max: 10, // Max pool size
   idle_timeout: 20, // Idle connection timeout in seconds
   connect_timeout: 10, // Connection timeout in seconds
